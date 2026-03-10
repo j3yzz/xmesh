@@ -1,0 +1,28 @@
+services:
+  mysql:
+    image: mysql:9.4.0
+    container_name: xmesh-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-xmesh}
+      MYSQL_USER: ${MYSQL_USER:-}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    networks:
+      - xmesh-net
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-p${MYSQL_ROOT_PASSWORD:-changeme}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  mysql_data:
+
+networks:
+  xmesh-net:
