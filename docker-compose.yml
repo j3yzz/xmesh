@@ -5,13 +5,13 @@ services:
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-changeme}
-      MYSQL_DATABASE: ${MYSQL_DATABASE:-xmesh}
       MYSQL_USER: ${MYSQL_USER:-}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:-}
     ports:
       - "3306:3306"
     volumes:
       - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d
     networks:
       - xmesh-net
     healthcheck:
@@ -20,6 +20,32 @@ services:
       timeout: 5s
       retries: 5
       start_period: 30s
+
+  user-service:
+    build: ./user-service
+    container_name: xmesh-user-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PORT: "8080"
+      DB_HOST: xmesh-mysql
+      DB_PORT: "3306"
+      DB_USER: ${USER_SVC_DB_USER:-root}
+      DB_PASSWORD: ${USER_SVC_DB_PASSWORD:-}
+      DB_NAME: ${USER_SVC_DB_NAME:-user_svc}
+      JWT_SECRET: ${USER_SVC_JWT_SECRET:-changemejwt}
+    ports:
+      - "8080:8080"
+    networks:
+      - xmesh-net
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
 
 volumes:
   mysql_data:
