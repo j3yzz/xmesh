@@ -47,6 +47,50 @@ services:
       retries: 3
       start_period: 5s
 
+  post-service:
+    build: ./post-service
+    container_name: xmesh-post-service
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      PORT: "8585"
+      DB_HOST: xmesh-mysql
+      DB_PORT: "3306"
+      DB_USER: ${POST_SVC_DB_USER:-root}
+      DB_PASSWORD: ${POST_SVC_DB_PASSWORD:-}
+      DB_NAME: ${POST_SVC_DB_NAME:-post_svc}
+      JWT_SECRET: ${USER_SVC_JWT_SECRET:-changemejwt}
+    ports:
+      - "8585:8585"
+    networks:
+      - xmesh-net
+    # healthcheck:
+      # test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:8080/health"]
+      # interval: 10s
+      # timeout: 5s
+      # retries: 3
+      # start_period: 5s
+
+  feed-service:
+    build: ./feed-service
+    container_name: xmesh-feed-service
+    restart: unless-stopped
+    depends_on:
+      user-service:
+        condition: service_started
+      post-service:
+        condition: service_started
+    environment:
+      PORT: "8787"
+      JWT_SECRET: ${USER_SVC_JWT_SECRET:-changemejwt}
+      POST_SERVICE_BASE_URL: http://xmesh-post-service:8585
+    ports:
+      - "8787:8787"
+    networks:
+      - xmesh-net
+
 volumes:
   mysql_data:
 
